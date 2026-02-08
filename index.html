@@ -160,29 +160,3 @@
     </script>
 </body>
 </html>
-a.choices[0].message.content);
-                else throw new Error();
-            } catch {
-                appendToUI('ai', "ERROR: Handshake failed. Check your API key or connection.");
-            }
-        }
-
-        function copyText(btn) {
-            const t = btn.parentElement.innerText.replace('📋', '').replace('ANONYMOUS MOOD ON ⚡', '').trim();
-            navigator.clipboard.writeText(t);
-            btn.innerText = "✅"; setTimeout(() => btn.innerText = "📋", 1500);
-        }
-
-        function toggleMusic() {
-            const a = document.getElementById('bg-audio');
-            const b = document.getElementById('music-btn');
-            if(a.paused) { a.play().catch(()=>{}); b.innerText = "🔊"; } else { a.pause(); b.innerText = "🔇"; }
-        }
-
-        // Handle Enter Key
-        document.getElementById('user-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleSend();
-        });
-    </script>
-</body>
-</html>
