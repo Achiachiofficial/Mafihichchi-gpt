@@ -2,124 +2,142 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizer-visual">
     <title>MAFI-GPT | achiachi-official</title>
     <link rel="icon" type="image/png" href="https://image2url.com/r2/default/images/1770515675790-f963349f-f8ef-42d5-a9ad-cfe4d861d039.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --bg: #000; --green: #00ff41; --red: #ff0000; }
-        body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; margin: 0; padding: 0; overflow: hidden; height: 100dvh; display: flex; flex-direction: column; }
+        body { background: var(--bg); color: var(--green); font-family: 'Courier New', monospace; margin: 0; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         canvas { position: fixed; top: 0; left: 0; z-index: -1; opacity: 0.2; }
         
-        /* Layout Fixes */
-        #chat-container { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; scroll-behavior: smooth; }
-        #input-area { background: rgba(0,0,0,0.9); border-top: 1px solid #1a1a1a; padding: 1rem; padding-bottom: calc(1rem + env(safe-area-inset-bottom)); }
-        
-        /* Bubbles */
-        .bubble { padding: 12px; border-radius: 10px; border: 1px solid; max-width: 85%; position: relative; word-break: break-word; }
-        .user-msg { background: rgba(0,255,65,0.05); border-color: var(--green); align-self: flex-end; color: #fff; }
-        .ai-msg { background: rgba(255,0,0,0.05); border-color: var(--red); align-self: flex-start; }
-        
+        #chat-container { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; }
+        .bubble { padding: 12px 16px; border-radius: 15px; border: 1px solid; max-width: 85%; word-wrap: break-word; line-height: 1.5; font-size: 14px; }
+        .user-msg { background: rgba(0, 255, 65, 0.1); border-color: var(--green); align-self: flex-end; color: #fff; box-shadow: 0 0 10px rgba(0,255,65,0.2); }
+        .ai-msg { background: rgba(255, 0, 0, 0.1); border-color: var(--red); align-self: flex-start; box-shadow: 0 0 10px rgba(255,0,0,0.2); }
+
+        #input-panel { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); border-top: 1px solid #1a1a1a; padding: 15px; z-index: 40; }
         #sidebar { position: fixed; left: -280px; top: 0; height: 100%; width: 280px; background: #050505; border-right: 1px solid var(--green); transition: 0.3s; z-index: 100; }
         #sidebar.open { left: 0; }
-        .copy-btn { cursor: pointer; float: right; font-size: 14px; margin-top: -5px; }
+        .copy-btn { cursor: pointer; float: right; margin-left: 10px; color: #fff; }
     </style>
 </head>
 <body>
 
     <canvas id="matrix"></canvas>
 
-    <div id="sidebar" class="flex flex-col">
-        <div class="p-4 border-b border-green-900 flex justify-between items-center">
-            <span class="font-bold text-white">HISTORY</span>
-            <button onclick="newChat()" class="bg-green-600 text-black px-2 py-1 text-xs font-bold rounded">+ NEW</button>
+    <div id="sidebar">
+        <div class="p-4 border-b border-green-900 flex justify-between items-center text-white font-bold">
+            HISTORY <button onclick="newChat()" class="bg-green-600 text-black px-3 py-1 text-xs rounded">+ NEW</button>
         </div>
         <div id="history-list" class="flex-1 overflow-y-auto"></div>
     </div>
 
-    <header class="p-4 flex justify-between items-center border-b border-gray-900 bg-black/80 backdrop-blur-md">
+    <header class="p-4 flex justify-between items-center border-b border-gray-900 bg-black/80 backdrop-blur-md z-50">
         <div class="flex items-center gap-3">
-            <button onclick="toggleMenu()" class="text-2xl">☰</button>
+            <button onclick="toggleMenu()" class="text-2xl text-green-500">☰</button>
             <div>
-                <h1 class="text-sm font-bold text-white">MAFI-GPT</h1>
-                <p class="text-[8px] text-red-500 uppercase">achiachi-official</p>
+                <h1 class="text-sm font-bold text-white tracking-widest">MAFI-GPT</h1>
+                <p class="text-[8px] text-red-500 uppercase font-black">achiachi-official</p>
             </div>
         </div>
-        <div class="flex gap-4 items-center">
-            <button onclick="toggleMusic()" id="m-icon" class="text-2xl">🔇</button>
-            <button onclick="promptKey()" class="text-xl">🔑</button>
+        <div class="flex gap-4">
+            <button onclick="toggleMusic()" id="m-btn" class="text-2xl">🔇</button>
+            <button onclick="setKey()" class="text-xl">🔑</button>
         </div>
     </header>
 
     <div id="chat-container">
         <div class="ai-msg bubble">
-            System Online... <br>Anonymous mood on ⚡<br>Master, how can I assist you?
+            <span class="font-bold">SYSTEM INITIALIZED...</span><br>
+            Anonymous mood on ⚡<br>
+            Master achiachi-official, I am ready. Type <span class="text-white font-bold">#sphelp</span> to see my specialized commands.
         </div>
     </div>
 
-    <div id="input-area">
+    <div id="input-panel">
         <div class="max-w-4xl mx-auto flex gap-2">
-            <input id="user-input" type="text" placeholder="Enter message..." class="flex-1 bg-[#0a0a0a] border border-green-900 p-3 rounded-lg text-green-400 outline-none focus:border-green-500">
-            <button onclick="send()" class="bg-green-600 hover:bg-green-400 text-black px-5 py-3 font-bold rounded-lg transition-all active:scale-95">GO</button>
+            <input id="user-input" type="text" placeholder="Type command..." class="flex-1 bg-black border border-green-900 p-3 rounded-xl text-green-400 outline-none focus:border-green-400">
+            <button onclick="send()" class="bg-green-600 text-black px-6 py-3 font-bold rounded-xl active:scale-90 transition">GO</button>
         </div>
     </div>
 
     <audio id="bg-music" loop src="https://image2url.com/r2/default/audio/1770505286846-4836eb14-1c20-433e-be71-64b88bb096a6.mp3"></audio>
 
     <script>
-        const MASTER_PASS = "mafi-achi-2024";
+        const MASTER = "mafi-achi-2024";
         let apiKey = localStorage.getItem('groq_key');
         let currentId = Date.now();
-        let chats = JSON.parse(localStorage.getItem('mafi_history') || '{}');
+        let history = JSON.parse(localStorage.getItem('mafi_history') || '{}');
 
-        // Access Control
-        if (localStorage.getItem('mafi_auth') !== MASTER_PASS) {
-            let p = prompt("ENTER ACCESS KEY:");
-            if (p === MASTER_PASS) localStorage.setItem('mafi_auth', p);
-            else document.body.innerHTML = "<h1 style='color:red;text-align:center;margin-top:20%'>ACCESS DENIED</h1>";
+        // Authentication
+        if(localStorage.getItem('mafi_auth') !== MASTER) {
+            let p = prompt("ACCESS CODE:");
+            if(p === MASTER) localStorage.setItem('mafi_auth', p);
+            else document.body.innerHTML = "<div class='h-screen flex items-center justify-center text-red-600 font-bold'><h1>ACCESS DENIED</h1></div>";
         }
 
-        // Matrix
-        const canvas = document.getElementById('matrix');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const drops = Array(Math.floor(canvas.width/16)).fill(1);
+        // Matrix Background
+        const c = document.getElementById('matrix');
+        const ctx = c.getContext('2d');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const drops = Array(Math.floor(c.width/15)).fill(1);
         function matrix() {
-            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,c.width,c.height);
             ctx.fillStyle = "#0F0"; ctx.font = "15px monospace";
             drops.forEach((y, i) => {
-                ctx.fillText(Math.floor(Math.random()*2), i*16, y*16);
-                if(y*16 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                ctx.fillText(Math.floor(Math.random()*2), i*15, y*15);
+                if(y*15 > c.height && Math.random() > 0.975) drops[i] = 0;
                 drops[i]++;
             });
         }
-        setInterval(matrix, 50);
+        setInterval(matrix, 40);
 
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); renderHistory(); }
-        function promptKey() { let k = prompt("Enter Groq API Key:"); if(k) { localStorage.setItem('groq_key', k); apiKey = k; } }
-        function toggleMusic() { const m = document.getElementById('bg-music'); m.paused ? m.play() : m.pause(); document.getElementById('m-icon').innerText = m.paused ? "🔇" : "🔊"; }
+        function setKey() { let k = prompt("Groq API Key:"); if(k) localStorage.setItem('groq_key', k); apiKey = k; }
+        function toggleMusic() { const m = document.getElementById('bg-music'); m.paused ? m.play() : m.pause(); document.getElementById('m-btn').innerText = m.paused ? "🔇" : "🔊"; }
 
         function append(role, text, save = true) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
             div.className = `bubble ${role === 'ai' ? 'ai-msg' : 'user-msg'}`;
-            div.innerHTML = `${text} ${role === 'ai' ? `<span class="copy-btn" onclick="copy(this)">📋</span><div style="font-size:8px;color:#555;margin-top:5px">Anonymous mood on ⚡</div>` : ''}`;
+            div.innerHTML = `<div>${text.replace(/\n/g, '<br>')}</div>
+                ${role === 'ai' ? `<span class="copy-btn" onclick="copy(this)">📋</span><div class="text-[8px] text-gray-500 mt-2 uppercase">Anonymous mood on ⚡</div>` : ''}`;
             container.appendChild(div);
             container.scrollTop = container.scrollHeight;
 
             if(save) {
-                if(!chats[currentId]) chats[currentId] = [];
-                chats[currentId].push({role, text});
-                localStorage.setItem('mafi_history', JSON.stringify(chats));
+                if(!history[currentId]) history[currentId] = [];
+                history[currentId].push({role, text});
+                localStorage.setItem('mafi_history', JSON.stringify(history));
             }
         }
 
         async function send() {
             const input = document.getElementById('user-input');
-            const msg = input.value.trim();
-            if(!msg || !apiKey) return;
-            append('user', msg);
+            const val = input.value.trim();
+            if(!val || !apiKey) return;
+            append('user', val);
             input.value = "";
+
+            // Custom Help Command Handler
+            if(val.toLowerCase() === "#sphelp") {
+                const helpList = `
+                    <b>🛡️ ELITE COMMANDS LIST:</b><br><br>
+                    #sptermux - Fix for Termux<br>
+                    #spstealth - Background hidden mode<br>
+                    #spdecrypt - Code de-obfuscator<br>
+                    #spsecurity - Proxy & Anti-ban<br>
+                    #spwebui - Add web dashboard<br>
+                    #spbot - Telegram integration<br>
+                    #spboost - Multi-threading<br>
+                    #spaudit - Vulnerability scan<br>
+                    #spschedule - Auto-timer<br>
+                    #spconvert - Language change
+                `;
+                setTimeout(() => append('ai', helpList), 500);
+                return;
+            }
 
             try {
                 const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -127,35 +145,36 @@
                     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "llama-3.1-8b-instant",
-                        messages: [{role: "system", content: "You are MAFI-GPT. Security Expert. Follow #sp commands."}, {role: "user", content: msg}]
+                        messages: [
+                            {role: "system", content: "You are MAFI-GPT by achiachi-official. You are a script security expert. Respond only with code or technical solutions. Always end with 'Anonymous mood on ⚡'."},
+                            {role: "user", content: val}
+                        ]
                     })
                 });
                 const data = await res.json();
                 append('ai', data.choices[0].message.content);
-            } catch (e) {
-                append('ai', "System Error: Handshake failed. Check API Key.");
-            }
+            } catch { append('ai', "CONNECTION ERROR: Check your API Key."); }
         }
 
         function copy(btn) {
-            navigator.clipboard.writeText(btn.parentElement.innerText.replace('📋','').replace('Anonymous mood on ⚡','').trim());
+            const t = btn.parentElement.querySelector('div').innerText;
+            navigator.clipboard.writeText(t);
             btn.innerText = "✅"; setTimeout(() => btn.innerText = "📋", 1500);
         }
 
         function newChat() { currentId = Date.now(); document.getElementById('chat-container').innerHTML = ""; toggleMenu(); }
-
+        
         function renderHistory() {
             const list = document.getElementById('history-list');
             list.innerHTML = "";
-            Object.keys(chats).reverse().forEach(id => {
-                const div = document.createElement('div');
-                div.className = "p-3 border-b border-gray-900 cursor-pointer hover:bg-green-900/10 text-xs";
-                div.innerText = chats[id][0]?.text.slice(0, 25) || "New Log";
-                div.onclick = () => { currentId = id; document.getElementById('chat-container').innerHTML = ""; chats[id].forEach(m => append(m.role, m.text, false)); toggleMenu(); };
-                list.appendChild(div);
+            Object.keys(history).reverse().forEach(id => {
+                const d = document.createElement('div');
+                d.className = "p-3 border-b border-gray-900 cursor-pointer hover:bg-green-900/20 text-[10px]";
+                d.innerText = history[id][0]?.text.slice(0, 30) || "Empty Chat";
+                d.onclick = () => { currentId = id; document.getElementById('chat-container').innerHTML = ""; history[id].forEach(m => append(m.role, m.text, false)); toggleMenu(); };
+                list.appendChild(d);
             });
         }
-
         document.getElementById('user-input').onkeypress = (e) => { if(e.key === 'Enter') send(); };
     </script>
 </body>
